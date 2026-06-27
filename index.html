@@ -295,7 +295,7 @@ canvas{display:block;margin:0 auto;border-radius:4px;max-width:100%;height:auto!
       </div>
     </div>
     <div class="game-canvas-wrap">
-      <canvas id="cv-tetris" width="400" height="520"></canvas>
+      <canvas id="cv-tetris" width="500" height="620"></canvas>
       <div class="overlay" id="ol-tetris"><div class="panel"><h2>游戏结束</h2><div class="score">得分: <span id="final-tetris">0</span></div><div class="best">最高分: <span id="best-tetris">0</span></div><button class="primary" onclick="startGame('tetris')">再来一局</button><button onclick="backToMenu()">返回菜单</button></div></div>
     </div>
     <div class="game-sidebar"><span class="key-hint">← →</span>移动 <span class="key-hint">↑</span>旋转 <span class="key-hint">↓</span>加速 <span class="key-hint">空格</span>硬降 <span class="key-hint">C</span>暂存 <span class="key-hint">P/ESC</span>暂停</div>
@@ -1061,13 +1061,13 @@ class TankGame{
 class TetrisGame{
   constructor(){
     this.canvas=$('cv-tetris');this.ctx=this.canvas.getContext('2d');
-    this.W=400;this.H=520;this.COLS=10;this.ROWS=20;this.CS=24;
-    this.OX=20;this.OY=20;
+    this.W=500;this.H=620;this.COLS=10;this.ROWS=22;this.CS=28;
+    this.OX=16;this.OY=16;
     this.running=true;this.paused=false;this.gameOver=false;
     this.animLooping=false; this._settingsPaused=false;
     this.score=0;this.level=1;this.lines=0;this.combo=0;
     this._speedMul=GameSettings.get('speed');
-    this._baseDropInterval=40;
+    this._baseDropInterval=60;
     this.board=Array.from({length:this.ROWS},()=>Array(this.COLS).fill(0));
     this.current=null;this.currentX=0;this.currentY=0;
     this.nextQueue=[];this.hold=null;this.canHold=true;
@@ -1085,7 +1085,7 @@ class TetrisGame{
     this.spawnPiece();this.fillQueue();
     this.bindKeys();this.loop();
   }
-  onSpeedChange(mul){this._speedMul=mul;this.dropInterval=Math.max(3,Math.floor(this._baseDropInterval/mul));}
+  onSpeedChange(mul){this._speedMul=mul;this.dropInterval=Math.max(8,Math.floor(this._baseDropInterval/mul));}
   pauseForSettings(){this._settingsPaused=true;}
   resumeFromSettings(){this._settingsPaused=false;}
   bindKeys(){
@@ -1116,7 +1116,7 @@ class TetrisGame{
     for(let r=0;r<shape.length;r++)for(let c=0;c<shape[r].length;c++)if(shape[r][c]){const ny=this.currentY+r,nx=this.currentX+c;if(ny>=0&&ny<this.ROWS&&nx>=0&&nx<this.COLS)this.board[ny][nx]=this.current.color}
     let cleared=0;
     for(let r=this.ROWS-1;r>=0;r--){if(this.board[r].every(c=>c!==0)){this.board.splice(r,1);this.board.unshift(Array(this.COLS).fill(0));cleared++;r++;}}
-    if(cleared>0){this.combo++;const points=[0,100,300,500,800];this.score+=(points[cleared]||cleared*200)*this.level*(1+this.combo*0.2);this.lines+=cleared;this.level=Math.floor(this.lines/10)+1;this.dropInterval=Math.max(3,Math.floor(this._baseDropInterval/this._speedMul)-(this.level-1)*3);SFX.line();}else{this.combo=0}
+    if(cleared>0){this.combo++;const points=[0,100,300,500,800];this.score+=(points[cleared]||cleared*200)*this.level*(1+this.combo*0.2);this.lines+=cleared;this.level=Math.floor(this.lines/10)+1;this.dropInterval=Math.max(8,Math.floor(this._baseDropInterval/this._speedMul)-(this.level-1)*2);SFX.line();}else{this.combo=0}
     $('score-tetris').textContent=this.score;$('level-tetris').textContent=this.level;$('lines-tetris').textContent=this.lines;
   }
   endGame(){this.gameOver=true;const best=updateHS('tetris',this.score);$('final-tetris').textContent=this.score;$('best-tetris').textContent=best;$('ol-tetris').classList.add('show');SFX.gameover();}
@@ -1136,11 +1136,11 @@ class TetrisGame{
     for(let r=0;r<this.ROWS;r++)for(let c=0;c<this.COLS;c++){if(this.board[r][c]){ctx.fillStyle=this.board[r][c];ctx.fillRect(ox+c*cs+1,oy+r*cs+1,cs-2,cs-2);ctx.fillStyle='rgba(255,255,255,0.2)';ctx.fillRect(ox+c*cs+1,oy+r*cs+1,cs-2,3)}}
     if(this.current){let gy=this.currentY;while(this.canPlace(this.current.shape,this.currentX,gy+1))gy++;if(gy!==this.currentY){for(let r=0;r<this.current.shape.length;r++)for(let c=0;c<this.current.shape[r].length;c++)if(this.current.shape[r][c]){ctx.strokeStyle='rgba(255,255,255,0.3)';ctx.lineWidth=1;ctx.strokeRect(ox+(this.currentX+c)*cs+1,oy+(gy+r)*cs+1,cs-2,cs-2)}}}
     if(this.current){for(let r=0;r<this.current.shape.length;r++)for(let c=0;c<this.current.shape[r].length;c++)if(this.current.shape[r][c]&&this.currentY+r>=0){ctx.fillStyle=this.current.color;ctx.fillRect(ox+(this.currentX+c)*cs+1,oy+(this.currentY+r)*cs+1,cs-2,cs-2);ctx.fillStyle='rgba(255,255,255,0.3)';ctx.fillRect(ox+(this.currentX+c)*cs+1,oy+(this.currentY+r)*cs+1,cs-2,4)}}
-    const px=ox+this.COLS*cs+25;
-    ctx.fillStyle='#fff';ctx.font='13px monospace';ctx.fillText('NEXT',px,oy+15);
-    for(let i=0;i<3;i++){if(i<this.nextQueue.length){const piece=this.pieces[this.nextQueue[i]];for(let r=0;r<piece.shape.length;r++)for(let c=0;c<piece.shape[r].length;c++)if(piece.shape[r][c]){ctx.fillStyle=piece.color;ctx.fillRect(px+c*14,oy+30+i*70+r*14,12,12)}}}
-    ctx.fillStyle='#fff';ctx.font='13px monospace';ctx.fillText('HOLD',px,oy+260);
-    if(this.hold){const piece=this.pieces[this.hold];for(let r=0;r<piece.shape.length;r++)for(let c=0;c<piece.shape[r].length;c++)if(piece.shape[r][c]){ctx.fillStyle=this.canHold?piece.color:'#555';ctx.fillRect(px+c*14,oy+275+r*14,12,12)}}
+    const px=ox+this.COLS*cs+30;
+    ctx.fillStyle='#fff';ctx.font='14px monospace';ctx.fillText('NEXT',px,oy+18);
+    for(let i=0;i<3;i++){if(i<this.nextQueue.length){const piece=this.pieces[this.nextQueue[i]];for(let r=0;r<piece.shape.length;r++)for(let c=0;c<piece.shape[r].length;c++)if(piece.shape[r][c]){ctx.fillStyle=piece.color;ctx.fillRect(px+c*14,oy+35+i*80+r*14,13,13)}}}
+    ctx.fillStyle='#fff';ctx.font='14px monospace';ctx.fillText('HOLD',px,oy+310);
+    if(this.hold){const piece=this.pieces[this.hold];for(let r=0;r<piece.shape.length;r++)for(let c=0;c<piece.shape[r].length;c++)if(piece.shape[r][c]){ctx.fillStyle=this.canHold?piece.color:'#555';ctx.fillRect(px+c*14,oy+330+r*14,13,13)}}
     if(this.paused||this._settingsPaused){ctx.fillStyle='rgba(0,0,0,0.6)';ctx.fillRect(0,0,this.W,this.H);ctx.fillStyle='#0ff';ctx.font='36px monospace';ctx.textAlign='center';ctx.fillText(this._settingsPaused?'设置中':'暂停中',this.W/2,this.H/2)}
   }
 }
